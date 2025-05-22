@@ -18,8 +18,6 @@ place_tresure(){
 
     local mode=${1:-0}
 
-    #generate_files_list "$root_name"
-
     # read file list 
     local files_list=()
     mapfile -t files_list < /tmp/files_path_list.txt
@@ -41,16 +39,18 @@ place_tresure(){
             sha256sum "$selected_file" | awk '{print $1}'
             ;;
         #encrypted
-        3) new_pass=$(openssl rand -hex 8)
+        3)  
+            new_pass=$(openssl rand -hex 8)
             gpg --batch --yes --passphrase "$new_pass" -c "$selected_file"
             # rm "$selected_file"
             echo "$new_pass"
             ;;
         #signed
-        4) openssl genrsa -out private2.pem 2048
-        openssl rsa -in private2.pem -pubout -out public2.pem
-        openssl dgst -sha256 -sign private2.pem -out "$selected_file".sig "$selected_file"
-        cat public2.pem
+        4) 
+            openssl genrsa -out private2.pem 2048
+            openssl rsa -in private2.pem -pubout -out public2.pem
+            openssl dgst -sha256 -sign private2.pem -out "$selected_file".sig "$selected_file"
+            cat public2.pem
             ;;
         *)
             echo "Invalid mode: $mode" >&2
@@ -60,5 +60,5 @@ place_tresure(){
 }
 
 verify(){
-    echo "verify"
+    echo 0
 }

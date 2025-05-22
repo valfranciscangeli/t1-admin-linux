@@ -58,8 +58,10 @@ clean_board(){
     local root_name
     root_name=$(cat /tmp/root_dir_name.txt)
     rm -rf "$root_name"
-    echo "Cleaned $root_name"
+    rm -rf /tmp/root_dir_name.txt
+    rm -rf /tmp/treasure_path.txt
     rm -rf /tmp/files_path_list.txt
+    echo "all cleaned up! ;)"
 }
 
 
