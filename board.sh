@@ -7,8 +7,8 @@ set -euo pipefail
 # shellcheck disable=SC2120
 create_board(){
     local depth=${1:-3}
-    local width=${1:-2}
-    local files=${1:-4}
+    local width=${2:-2}
+    local files=${3:-4}
     local dir_base="dir_"
 
     local root_name
@@ -58,9 +58,9 @@ clean_board(){
     local root_name
     root_name=$(cat /tmp/root_dir_name.txt)
     rm -rf "$root_name"
-    rm -rf /tmp/root_dir_name.txt
-    rm -rf /tmp/treasure_path.txt
     rm -rf /tmp/files_path_list.txt
+    rm -rf /tmp/treasure_key.txt
+    rm -rf /tmp/verify_public.pem
     echo "all cleaned up! ;)"
 }
 
@@ -105,11 +105,11 @@ fill_board(){
             openssl rand -base64 50 > "$file"
         done ;;
 
-    3)  pass=$(openssl rand -hex 8)
+    3)  pass=$(openssl rand -hex 32)
         for file in "${files_list[@]}"; do
-            gpg --batch --yes --passphrase "$pass" -c "$file"
-            # rm "$file"
-        done ;;
+            echo "$pass" | gpg --batch --yes --passphrase-fd 0 -c "$file"
+        done 
+        ;;
 
     4)  if [ ! -f private.pem ]; then
             openssl genrsa -out private.pem 2048
@@ -118,8 +118,11 @@ fill_board(){
 
         for file in "${files_list[@]}"; do
             openssl dgst -sha256 -sign private.pem -out "$file".sig "$file"
-            # rm "$file"
-        done ;;
+          
+        done 
+        rm private.pem
+        rm public.pem
+        ;;
 
     *) echo "Invalid mode: $mode" ; return 1 ;;
     esac
