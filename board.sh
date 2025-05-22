@@ -64,6 +64,10 @@ clean_board(){
     rm -rf /tmp/treasure_key.txt
     rm -rf /tmp/treasure_file_path.txt
     rm -rf /tmp/verify_public.pem
+    rm -rf /tmp/.private.pem
+    rm -rf /tmp/.public.pem
+    rm -rf /tmp/.private2.pem
+    rm -rf /tmp/.public2.pem
     echo "all cleaned up! ;)" #success message
 }
 

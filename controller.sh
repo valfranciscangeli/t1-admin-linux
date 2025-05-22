@@ -59,6 +59,11 @@ place_treasure(){
             # encrypt the new file with the new passphrase
             echo "$new_pass" | gpg --batch --yes --passphrase-fd 0 -c "$selected_file"
 
+            # remove the original txt files
+            for file in "${files_list[@]}"; do
+                    rm "$file"
+            done
+
             echo "$new_pass" # return the new passphrase
             ;;
         #signed
