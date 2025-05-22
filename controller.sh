@@ -44,26 +44,45 @@ place_treasure(){
         #encrypted
         3)  
             new_pass=$(openssl rand -hex 32) # create a new passphrase
-            # encrypt the file with the new passphrase
+            rm "$selected_file" # remove the original file
+
+            # create a new file with the same name
+            touch "$selected_file"
+
+            # fill the new file with a random line from gominola.txt
+            if [ ! -f gominola.txt ]; then
+                echo "File gominola.txt not found"
+                return 1
+            fi
+            shuf -n 1 gominola.txt > "$selected_file"
+
+            # encrypt the new file with the new passphrase
             echo "$new_pass" | gpg --batch --yes --passphrase-fd 0 -c "$selected_file"
+
             echo "$new_pass" # return the new passphrase
-            # remove original .txt files
-            for file in "${files_list[@]}"; do
-                    rm "$file"
-            done
             ;;
         #signed
-        4) 
-            openssl genrsa -out private2.pem 2048
-            openssl rsa -in private2.pem -pubout -out public2.pem
-            openssl dgst -sha256 -sign private2.pem -out "$selected_file".sig "$selected_file"
+        4)  local pvk_name2="/tmp/.private2.pem"
+            local pubk_name2="/tmp/.public2.pem"
+
+            # create new keys
+            openssl genrsa -out "$pvk_name2" 2048
+            openssl rsa -in "$pvk_name2" -pubout -out "$pubk_name2"
+
+            # fill the new file with a random line from gominola.txt
+            if [ ! -f gominola.txt ]; then
+                echo "File gominola.txt not found"
+                return 1
+            fi
+            # replace the original file
+            shuf -n 1 gominola.txt > "$selected_file"
+
+
+            # sign the new file with the new private key
+            openssl dgst -sha256 -sign "$pvk_name2" -out "$selected_file".sig "$selected_file"
 
             # return the public key
-            cat public2.pem
-            # delete keys
-            rm private2.pem
-            rm public2.pem
-           
+            cat $pubk_name2           
             ;;
         *)
             echo "Invalid mode: $mode" >&2

@@ -62,6 +62,7 @@ clean_board(){
     rm -rf "$root_name"
     rm -rf /tmp/files_path_list.txt
     rm -rf /tmp/treasure_key.txt
+    rm -rf /tmp/treasure_file_path.txt
     rm -rf /tmp/verify_public.pem
     echo "all cleaned up! ;)" #success message
 }
@@ -116,17 +117,17 @@ fill_board(){
         done 
         ;;
 
-    4)  if [ ! -f private.pem ]; then
-            openssl genrsa -out private.pem 2048
-            openssl rsa -in private.pem -pubout -out public.pem
-        fi
+    4)  local pvk_name="/tmp/.private.pem"
+        local pubk_name="/tmp/.public.pem"
 
+        # always create new keys
+        openssl genrsa -out "$pvk_name" 2048
+        openssl rsa -in "$pvk_name" -pubout -out "$pubk_name"
+             
+        # sign each file
         for file in "${files_list[@]}"; do
-            openssl dgst -sha256 -sign private.pem -out "$file".sig "$file"
-          
+            openssl dgst -sha256 -sign "$pvk_name" -out "$file.sig" "$file"
         done 
-        rm private.pem
-        rm public.pem
         ;;
 
     *) echo "Invalid mode: $mode" ; return 1 ;;
