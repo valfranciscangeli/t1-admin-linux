@@ -5,10 +5,6 @@
 
 set -euo pipefail
 
-source ./utils.sh 
-
-set -euo pipefail
-
 # shellcheck disable=SC2120
 place_treasure(){
 

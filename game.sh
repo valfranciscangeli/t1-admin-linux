@@ -79,10 +79,8 @@ fi
         echo "the treasure has been hidden!"
         echo "now it's time to find it!"
         place_treasure "$mode" > /tmp/treasure_key.txt
-        local attempts=5
         echo "look for the treasure inside $(cat /tmp/root_dir_name.txt)"
-        while [ $attempts -gt 0 ]; do
-            echo "you have $attempts attempts left"
+        while true; do
             echo "enter the path (./board_root/...) of the candidate file:"
             read -r file_path
             local is_found
@@ -91,23 +89,18 @@ fi
                 echo "you found the treasure!"
                 break
             else
-                echo "this is not the treasure"
-                attempts=$((attempts - 1))
-                if [ $attempts -eq 0 ]; then
-                    echo "you lost! the treasure was in $(cat /tmp/treasure_file_path.txt)"
-                    break
-                fi
+                echo "this is not the treasure :c"
                 echo "want to try again? [y/n]"
                 read -r try_again
                 if [ "$try_again" == "n" ]; then
-                    echo "the biggest loser is the one who gives up... bye!"
-                    echo "the treasure was in $(cat /tmp/treasure_file_path.txt)"
+                    echo "the biggest loser is the one who gives up..."
+                    echo "the treasure was hidden in $(cat /tmp/treasure_file_path.txt)"
+                    echo "goodbye!"
                     clean_board
                     exit 0
                    
                 fi
                 echo "ok, let's try again"
-                
             fi
         done
     else 
