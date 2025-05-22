@@ -1,1 +1,32 @@
+# Archivos generados por el editor/IDE
+*.swp
+*.swo
+*~
+.DS_Store
+.idea/
+.vscode/
+
+# Archivos ejecutables compilados (si los hubiera)
+*.out
+*.exe
+
+# Archivos de log
+*.log
+
+# Archivos temporales
+*.tmp
+temp/
+
+# Archivos de datos específicos del proyecto (si los hay)
+*.data
+*.db
+
+# Archivos de configuración local (no versionados)
+.env
+*.local
+
+# Archivos de backup creados por editores
+*.bak
+
+# Otros
 board_root/*
