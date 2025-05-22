@@ -5,6 +5,8 @@
 set -euo pipefail
 
 # shellcheck disable=SC2120
+
+# create all the directories and files for the game
 create_board(){
     local depth=${1:-3}
     local width=${2:-2}
@@ -14,7 +16,7 @@ create_board(){
     local root_name
     root_name=$(cat /tmp/root_dir_name.txt)
 
-    mkdir "$root_name" #&& echo "root dir created with name $root_name"
+    mkdir "$root_name" 
     local current_level_dirs=("$root_name")  # level 0
 
     for i in $(seq 1 "$depth"); do  # for each level
@@ -39,13 +41,13 @@ create_board(){
     for parent_dir in "${current_level_dirs[@]}"; do 
         for _ in $(seq 1 "$files"); do
             local file_name="$parent_dir/file_$file_counter.txt"
-            touch "$file_name"  && files_list+=("$file_name") #&& echo "$file_name created"
+            touch "$file_name"  && files_list+=("$file_name") 
             file_counter+=1
         done
 
     done
     
-    # save list in /tmp/archivos.txt
+    # save list in /tmp/files_path_list.txt
     for file in "${files_list[@]}"; do
         echo "$file"
     done > /tmp/files_path_list.txt
@@ -53,7 +55,7 @@ create_board(){
 }
 
 
-
+# clean all the directories and files created for the game
 clean_board(){
     local root_name
     root_name=$(cat /tmp/root_dir_name.txt)
@@ -61,21 +63,24 @@ clean_board(){
     rm -rf /tmp/files_path_list.txt
     rm -rf /tmp/treasure_key.txt
     rm -rf /tmp/verify_public.pem
-    echo "all cleaned up! ;)"
+    echo "all cleaned up! ;)" #success message
 }
 
 
 
-# shellcheck disable=SC2120
-fill_board(){
-    #| # | Modo        | Contenido del archivo                | Postprocesamiento  |
-    #| - | ----------- | ------------------------------------ | ------------------ |
-    #| 0 | `name`      | Libre, pueden estar vacíos           | Ninguno            |
-    #| 1 | `content`   | Deben contener caracteres aleatorios | Ninguno            |
-    #| 2 | `checksum`  | Deben contener caracteres aleatorios | Ninguno            |
-    #| 3 | `encrypted` | Libre, no vacíos                     | Encriptar con GPG  |
-    #| 4 | `signed`    | Libre, no vacíos                     | Firmar con OpenSSL |
 
+
+# fill all the files with the selected mode
+    #| N | Mode        | File content                         | Post-processing    |
+    #| - | ----------- | ------------------------------------ | ------------------ |
+    #| 0 | `name`      | Free, can be empty                   | None               |
+    #| 1 | `content`   | Must contain random characters       | None               |
+    #| 2 | `checksum`  | Must contain random characters       | None               |
+    #| 3 | `encrypted` | Free, not empty                      | Encrypt with GPG   |
+    #| 4 | `signed`    | Free, not empty                      | Sign with OpenSSL  |
+
+fill_board(){
+    
     local mode=${1:-0}
 
     # read file list 

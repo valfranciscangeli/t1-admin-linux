@@ -5,17 +5,16 @@
 
 set -euo pipefail
 
-# shellcheck disable=SC2120
+# hide treasure in a random file, processing it according to the mode
+#|N| Mode        | Action on the chosen file              | Returned value                     |
+#|-| ----------- | -------------------------------------- | ---------------------------------- |
+#|0| `name`      | Nothing                                | File name                          |
+#|1| `content`   | Nothing                                | File content                       |
+#|2| `checksum`  | Nothing                                | `sha256sum` or similar of the file |
+#|3| `encrypted` | Re-encrypt with **another passphrase** | New passphrase used                |
+#|4| `signed`    | Re-sign with **another private key**   | New public key (`.pem`) generated  |
+
 place_treasure(){
-
-    #|N| Modo        | Acción sobre el archivo elegido     | Valor devuelto                        |
-    #|-| ----------- | ----------------------------------- | ------------------------------------- |
-    #|0| `name`      | Nada                                | Nombre del archivo                    |
-    #|1| `content`   | Nada                                | Contenido del archivo                 |
-    #|2| `checksum`  | Nada                                | `sha256sum` o similar del archivo     |
-    #|3| `encrypted` | Reencriptar con **otra passphrase** | Nueva passphrase usada                |
-    #|4| `signed`    | Refirmar con **otra llave privada** | Nueva llave pública (`.pem`) generada |
-
 
     local mode=${1:-0}  # name by default
 
@@ -26,7 +25,7 @@ place_treasure(){
     # select a random file from the list
     local selected_file
     selected_file=${files_list[ $RANDOM % ${#files_list[@]} ]}
-    echo "$selected_file" > /tmp/treasure_file_path.txt # save the selected file name to debug
+    echo "$selected_file" > /tmp/treasure_file_path.txt # save the selected file name to debug only
 
     # process the selected file by mode
     case "$mode" in
@@ -44,7 +43,7 @@ place_treasure(){
             ;; # return checksum, but only the hash
         #encrypted
         3)  
-            new_pass=$(openssl rand -hex 32) # cretae a new passphrase
+            new_pass=$(openssl rand -hex 32) # create a new passphrase
             # encrypt the file with the new passphrase
             echo "$new_pass" | gpg --batch --yes --passphrase-fd 0 -c "$selected_file"
             echo "$new_pass" # return the new passphrase
@@ -58,8 +57,10 @@ place_treasure(){
             openssl genrsa -out private2.pem 2048
             openssl rsa -in private2.pem -pubout -out public2.pem
             openssl dgst -sha256 -sign private2.pem -out "$selected_file".sig "$selected_file"
-      
+
+            # return the public key
             cat public2.pem
+            # delete keys
             rm private2.pem
             rm public2.pem
            
@@ -71,22 +72,27 @@ place_treasure(){
     esac
 }
 
-verify(){
-    #| N | Modo        | Acción esperada                               |
-    #| - | ----------- | --------------------------------------------- |
-    #| 0 | `name`      | Comparar el **nombre del archivo**            |
-    #| 1 | `content`   | Comparar el **contenido literal del archivo** | 
-    #| 3 | `encrypted` | **Intentar desencriptar** con la passphrase   |
-    #| 4 | `signed`    | Verificar firma con **llave pública**         | 
 
-    local mode=${1:-0}
-    local file_path=${2:-""}
-    local treasure_key
+# verify if the candidate file is the treasure
+#| N | Mode        | Expected Action                                   |
+#| - | ----------- | ------------------------------------------------ |
+#| 0 | `name`      | Compare the **file name**                        |
+#| 1 | `content`   | Compare the **literal content of the file**      |
+#| 2 | `checksum`  | Compare the **checksum (sha256sum) of the file** |
+#| 3 | `encrypted` | **Try to decrypt** with the passphrase           |
+#| 4 | `signed`    | Verify signature with **public key**             |
+
+verify(){
+   
+    local mode=${1:-0} # name by default
+    local file_path=${2:-""} # file path to verify
+
+    local treasure_key # read the treasure key from the file
     treasure_key=$(cat /tmp/treasure_key.txt)
     case "$mode" in
         #name
         0)
-            if [ "$file_path" == "$treasure_key" ]; then
+            if [ "$file_path" == "$treasure_key" ]; then # compare file name
                 echo "1"
             else
                 echo "0"
@@ -94,7 +100,7 @@ verify(){
             ;;
         #content
         1)
-            if [ "$(cat "$file_path")" == "$treasure_key" ]; then
+            if [ "$(cat "$file_path")" == "$treasure_key" ]; then #compare file content
                 echo "1"
             else
                 echo "0"
@@ -102,7 +108,7 @@ verify(){
             ;;
         #checksum
         2)
-            if [ "$(sha256sum "$file_path" | awk '{print $1}')" == "$treasure_key" ]; then
+            if [ "$(sha256sum "$file_path" | awk '{print $1}')" == "$treasure_key" ]; then #compare checksum
                 echo "1"
             else
                 echo "0"
@@ -110,7 +116,8 @@ verify(){
             ;;
         #encrypted
         3)
-            if echo "$treasure_key" | gpg --batch --quiet --passphrase-fd 0 -d "$file_path" >/dev/null 2>&1; then
+            #check if the file can be decrypted with the passphrase saved in the treasure key
+            if echo "$treasure_key" | gpg --batch --quiet --passphrase-fd 0 -d "$file_path" >/dev/null 2>&1; then 
                 echo "1"
             else
                 echo "0"
@@ -118,9 +125,11 @@ verify(){
             ;;
         #signed
         4)
+            # create a temporary public key file
             local public_key_path="/tmp/verify_public.pem"
             cat /tmp/treasure_key.txt > "$public_key_path"
 
+            # verify the signature with the public key
             if openssl dgst -sha256 -verify "$public_key_path" -signature "$file_path.sig" "$file_path" >/dev/null 2>&1; then
                 echo "1"
             else

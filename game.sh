@@ -2,11 +2,11 @@
 
 set -euo pipefail
 
-# Importar módulos
+# import modules
 source ./board.sh  
 source ./controller.sh
 
-# Colores para la terminal
+# colors for terminal text
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -14,7 +14,7 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# Función para mostrar encabezados
+# function for print section headers
 header() {
     echo -e "${CYAN}"
     echo "===================================="
@@ -23,34 +23,35 @@ header() {
     echo -e "${NC}"
 }
 
-# Función para mensajes de éxito
+# for showing success messages
 success() {
     echo -e "${GREEN}[✓] $1${NC}"
 }
 
-# Función para mensajes de error
+# for showing error messages
 error() {
     echo -e "${RED}[✗] $1${NC}"
 }
 
-# Función para mensajes informativos
+# for showing info messages
 info() {
     echo -e "${BLUE}[i] $1${NC}"
 }
 
-# Función para advertencias
+# for showing warning messages
 warning() {
     echo -e "${YELLOW}[!] $1${NC}"
 }
 
+# main function to initialize the game
 init_game() {
-    clear
-    echo "./board_root" > /tmp/root_dir_name.txt
+    clear #clear the terminal
+    echo "./board_root" > /tmp/root_dir_name.txt # save the root directory name
     clean_board >/dev/null # clear previous games data
  
+    # Show welcome message
     header "TREASURE HUNT GAME"
     
-
     info "Hi! Are you ready to play the greatest game of all times? [y/n]"
     read -r proceed
     
@@ -62,7 +63,7 @@ init_game() {
 
     success "Ok, let's start!"
     
-    # Configuración del tablero
+    # board configuration
     header "BOARD CONFIGURATION"
     while true; do
         read -p "How many levels do you want to create? [1+] " depth
@@ -91,6 +92,9 @@ init_game() {
         fi
     done
 
+    # we only continue if all parameters are valid
+
+    # show summary of the board configuration
     info "Creating board with:"
     echo -e "• Levels: ${YELLOW}$depth${NC}"
     echo -e "• Directories per level: ${YELLOW}$width${NC}"
@@ -98,11 +102,13 @@ init_game() {
     echo -e "• Directories will be named ${YELLOW}dir_xy${NC}"
     echo -e "• Files will be named ${YELLOW}file_N.txt${NC}"
     
+    # call for creating the board
+    info "Creating board..."
     create_board "$depth" "$width" "$files"
     success "Board created successfully!"
     info "Files are located in: $(cat /tmp/root_dir_name.txt)"
 
-    # Selección de modo
+    # select game mode
     header "GAME MODE SELECTION"
     echo -e "Choose how to hide the treasure:"
     echo -e "${YELLOW}0${NC}: Name"
@@ -122,20 +128,28 @@ init_game() {
             *) error "Invalid option, please enter 0-4" ;;
         esac
     done
+
+    # we only continue if the mode is valid
     
+    info "Filling all files..."
     fill_board "$mode"
-    success "The treasure has been hidden!"
     
+    info "Hiding the treasure..."
     place_treasure "$mode" > /tmp/treasure_key.txt
+    success "The treasure has been hidden!"
+
+    # game start
     header "TREASURE HUNT BEGINS!"
     info "Look for the treasure in: $(cat /tmp/root_dir_name.txt)"
     
-    # Búsqueda del tesoro
+    # main game loop
     while true; do
         read -p "Enter the full path (./board_root/...): " file_path
         
         local is_found
         is_found=$(verify "$mode" "$file_path")
+
+        # hunt is successful
         if [ "$is_found" -eq 1 ]; then
             echo -e "\n${GREEN}"
             echo "===================================="
@@ -143,12 +157,14 @@ init_game() {
             echo "===================================="
             echo -e "${NC}"
             break
+        # hunt is unsuccessful
         else
-            warning "This is not the treasure :c"
+            error "This is not the treasure :c"
+
+            # ask if the user wants to try again
             read -p "Try again? [y/n]: " try_again
-            
             if [ "$try_again" != "y" ]; then
-                 warning "The biggest loser, is the one who gives up..."
+                error "The biggest loser, is the one who gives up..."
                 warning "The treasure was hidden in: $(cat /tmp/treasure_file_path.txt)"
                 clean_board >/dev/null
                 info "Goodbye!"
@@ -157,7 +173,8 @@ init_game() {
         fi
     done
     
-    clean_board
+    clean_board > /dev/null
+    exit 0
 }
 
 init_game
