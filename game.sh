@@ -135,17 +135,29 @@ init_game() {
     fill_board "$mode"
     
     info "Hiding the treasure..."
-    place_treasure "$mode" > /tmp/treasure_key.txt
+    clue=$(place_treasure "$mode" | tee /tmp/treasure_key.txt)
     success "The treasure has been hidden!"
+    if [ "$mode" -eq 0 ]; then
+        clue="$(basename "$clue")"
+    fi
+    info "This is the clue: $clue. Good luck!"
 
     # game start
     header "TREASURE HUNT BEGINS!"
-    info "Look for the treasure in: $(cat /tmp/root_dir_name.txt)"
+    info "Look for the treasure inside $(cat /tmp/root_dir_name.txt) folder ..."
     
     # main game loop
     while true; do
-        read -p "Enter the full path (./board_root/...): " file_path
+        read -p "Enter the full path (./board_root/...) [or n for exit]: " file_path
         
+        # check if the user wants to exit
+        if [ "$file_path" == "n" ]; then
+            error "The biggest loser, is the one who gives up..."
+            warning "The treasure was hidden in: $(cat /tmp/treasure_file_path.txt)"
+            clean_board >/dev/null
+            info "Goodbye!"
+            exit 0
+        fi
         local is_found
         is_found=$(verify "$mode" "$file_path")
 
@@ -160,16 +172,7 @@ init_game() {
         # hunt is unsuccessful
         else
             error "This is not the treasure :c"
-
-            # ask if the user wants to try again
-            read -p "Try again? [y/n]: " try_again
-            if [ "$try_again" != "y" ]; then
-                error "The biggest loser, is the one who gives up..."
-                warning "The treasure was hidden in: $(cat /tmp/treasure_file_path.txt)"
-                clean_board >/dev/null
-                info "Goodbye!"
-                exit 0
-            fi
+            warning "Remember, the clue is: $clue"
         fi
     done
     
